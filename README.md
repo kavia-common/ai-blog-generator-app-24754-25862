@@ -1,1 +1,3 @@
-# ai-blog-generator-app-24754-25862
+# Database Workspace
+
+See `Database/README.md` for configuration details (DB_NAME, port), and `Database/startup.sh` for local setup helper.
