@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Minimal PostgreSQL startup script with full paths
-DB_NAME="myapp"
+# Updated to initialize ai_blog_generator_db and apply schema/migrations
+DB_NAME="ai_blog_generator_db"
 DB_USER="appuser"
 DB_PASSWORD="dbuser123"
 DB_PORT="5000"
@@ -128,6 +129,26 @@ GRANT CREATE ON SCHEMA public TO ${DB_USER};
 -- Show current permissions for debugging
 \dn+ public
 EOF
+
+# Apply migrations/schema if present
+if [ -f "Database/schema.sql" ]; then
+    echo "Applying core schema (schema.sql)..."
+    sudo -u postgres ${PG_BIN}/psql -p ${DB_PORT} -d ${DB_NAME} -f "Database/schema.sql" >/dev/null 2>&1 || {
+        echo "Warning: Failed to apply schema.sql (check SQL and permissions)."
+    }
+fi
+
+# Apply migrations in order if migrations folder exists
+if [ -d "Database/migrations" ]; then
+    echo "Applying migrations from Database/migrations ..."
+    for file in Database/migrations/*.sql; do
+        [ -e "$file" ] || continue
+        echo " - Running migration: $(basename "$file")"
+        sudo -u postgres ${PG_BIN}/psql -p ${DB_PORT} -d ${DB_NAME} -f "$file" >/dev/null 2>&1 || {
+            echo "Warning: Migration $(basename "$file") failed (may have been applied already)."
+        }
+    done
+fi
 
 # Save connection command to a file
 echo "psql postgresql://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}" > db_connection.txt
